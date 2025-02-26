@@ -1,0 +1,2 @@
+# For development, install all dependencies
+-r requirements/dev.txt 

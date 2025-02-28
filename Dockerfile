@@ -42,7 +42,7 @@ USER appuser
 
 # Copy application code
 COPY app app/
-COPY gunicorn_config.py .
+# COPY gunicorn_config.py .
 
 # Expose application port
 EXPOSE 8000

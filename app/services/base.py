@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 
-from db.redis_client import redis_client
+from app.db.redis_client import redis_client
 
 
 class BaseService:

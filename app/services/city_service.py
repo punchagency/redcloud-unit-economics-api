@@ -1,7 +1,7 @@
 from typing import Dict, List
 
-from db.bigquery import bigquery_client
-from services.base import BaseService
+from app.db.bigquery import bigquery_client
+from app.services.base import BaseService
 
 
 class CityService(BaseService):

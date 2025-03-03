@@ -22,4 +22,4 @@ mkdocs>=1.5.3
 mkdocs-material>=9.4.6 
 
 # console
-rich>=13.10.0
+rich

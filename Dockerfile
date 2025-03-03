@@ -40,7 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Copy application code and config files
+# Copy application code
 COPY app app/
 
 # Expose application port
@@ -55,4 +55,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/ || exit 1
 
 # Command to run the app with Gunicorn
-CMD ["gunicorn", "-c", "app/gunicorn_config.py", "app.main:app"]
+CMD ["gunicorn", "app.main:app", "-c", "app/gunicorn_config.py"]

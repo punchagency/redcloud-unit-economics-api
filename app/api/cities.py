@@ -1,8 +1,8 @@
 from typing import List
 
 from fastapi import APIRouter, HTTPException
-from models.schemas import CityMetrics, HTTPError, CityResponse
-from services.city_service import city_service
+from app.models.schemas import CityMetrics, HTTPError, CityResponse
+from app.services.city_service import city_service
 
 router = APIRouter()
 

@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Dict, List, Optional
 
-from core.config import settings
+from app.core.config import settings
 from google.api_core import exceptions, retry
 from google.cloud import bigquery
 from google.cloud.bigquery import QueryJobConfig, ScalarQueryParameter

@@ -6,8 +6,7 @@ WORKDIR /app
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONPATH=/app
+    PYTHONDONTWRITEBYTECODE=1
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -43,18 +42,18 @@ USER appuser
 
 # Copy application code
 COPY app app/
+COPY main.py .
+COPY gunicorn_config.py .
 
 # Expose application port
 EXPOSE 8000
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1 \
-    APP_ENV=production \
-    PYTHONPATH=/app
+    APP_ENV=production
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/ || exit 1
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD curl -f http://localhost:8000/ || exit 1
 
 # Command to run the app with Gunicorn
-CMD ["gunicorn", "app.main:app", "-c", "app/gunicorn_config.py"]
+CMD ["gunicorn", "-c", "gunicorn_config.py", "main:app"]

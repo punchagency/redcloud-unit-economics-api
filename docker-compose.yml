@@ -1,5 +1,5 @@
 services:
-  api:
+  web:
     # build:
     #   context: .
     #   dockerfile: Dockerfile
@@ -10,10 +10,11 @@ services:
       - .env
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp_config.json
+      - PYTHONPATH=/app
     volumes:
       - ./gcp_config.json:/app/gcp_config.json
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -47,7 +48,7 @@ services:
       - ./nginx/certbot/www:/var/www/certbot/:ro
       - ./nginx/certbot/conf/:/etc/nginx/ssl/:ro
     depends_on:
-      - api
+      - web
     restart: unless-stopped
 
   certbot:

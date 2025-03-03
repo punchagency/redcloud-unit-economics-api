@@ -7,4 +7,5 @@ if [[ -z "$VIRTUAL_ENV" ]]; then
 fi
 
 export GOOGLE_APPLICATION_CREDENTIALS="gcp_config.json"
+export PYTHONPATH=/app
 python app/main.py

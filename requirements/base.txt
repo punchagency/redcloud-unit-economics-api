@@ -13,4 +13,4 @@ redis>=5.0.1
 starlette>=0.27.0 
 
 # console
-rich>=13.10.0
+rich

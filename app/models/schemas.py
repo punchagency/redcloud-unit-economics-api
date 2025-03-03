@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Union
 
 from pydantic import BaseModel
 
@@ -16,20 +16,20 @@ class CityResponse(BaseModel):
 
 
 class RetailerMetrics(BaseModel):
-    seller_id: int
-    seller_name: str
-    store_name: str
-    internal_seller_latitude: float
-    internal_seller_longitude: float
-    gross_ttv_usd: float
-    revenue_usd: float
-    total_orders: int
+    seller_id: str | int | None
+    seller_name: str | None
+    store_name: str | None
+    internal_seller_latitude: float | None
+    internal_seller_longitude: float | None
+    gross_ttv_usd: float | None
+    revenue_usd: float | None
+    total_orders: int | None
     product_categories: List[str]
 
     class Config:
         json_schema_extra = {
             "example": {
-                "seller_id": 12345,
+                "seller_id": '12345',
                 "seller_name": "John's Store",
                 "store_name": "JS Electronics",
                 "internal_seller_latitude": 9.0765,

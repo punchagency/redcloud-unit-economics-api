@@ -33,7 +33,7 @@ class BigQueryClient:
         initial=1.0,  # Initial delay in seconds
         maximum=60.0,  # Maximum delay in seconds
         multiplier=2.0,  # Delay multiplier
-        deadline=600.0  # Maximum total time to retry in seconds
+        deadline=600.0,  # Maximum total time to retry in seconds
     )
     async def execute_query(
         self,
@@ -119,7 +119,6 @@ class BigQueryClient:
         Note:
             Results are cached to improve performance
         """
-    
 
         query = f"""
         WITH retailer_metrics AS (
@@ -261,7 +260,7 @@ class BigQueryClient:
 
         query = f"""
         {self.get_base_retailer_query()}
-        WHERE LOWER(Store_Name) LIKE LOWER(@query)
+        WHERE LOWER(seller_name) LIKE LOWER(@query)
         """
 
         if city:

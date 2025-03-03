@@ -10,4 +10,4 @@ base_router.include_router(cities_router, prefix="/cities", tags=["Cities"])
 base_router.include_router(
     neighborhoods_router, prefix="/neighborhoods", tags=["Neighborhoods"]
 )
-base_router.include_router(retailers_router, prefix="/retailers", tags=["Retailers"])
+base_router.include_router(retailers_router, prefix="/retailers", tags=["retailers"])

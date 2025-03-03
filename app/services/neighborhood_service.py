@@ -15,9 +15,9 @@ class NeighborhoodService(BaseService):
             neighborhood_name (str): Name of the neighborhood
 
         Returns:
-            Dict: Neighborhood metrics including retailer density, revenue, 
-                 and individual retailer data
-        
+            Dict: Neighborhood metrics including retailer density, revenue,
+                and individual retailer data
+
         Note:
             Results are cached to improve performance
         """

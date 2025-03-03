@@ -3,7 +3,7 @@ services:
     # build:
     #   context: .
     #   dockerfile: Dockerfile
-    image: retail-economics-api:latest
+    image: unit-econ:develop
     ports:
       - "8000:8000"
     env_file:
@@ -13,7 +13,7 @@ services:
     volumes:
       - ./gcp_config.json:/app/gcp_config.json
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -57,6 +57,9 @@ services:
     volumes:
       - ./nginx/certbot/www/:/var/www/certbot/:rw
       - ./nginx/certbot/conf/:/etc/letsencrypt/:rw
+
+volumes:
+  redis_data:
 
 networks:
   default:

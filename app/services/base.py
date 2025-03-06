@@ -1,9 +1,19 @@
+import json
 from typing import Any, Dict, Optional
+
+from bson import json_util
 
 from app.db.redis_client import redis_client
 
 
 class BaseService:
+    """Base class for all services"""
+
+    @staticmethod
+    def serialize_mongodb_doc(doc: Dict) -> Dict:
+        """Convert MongoDB document to JSON serializable format"""
+        return json.loads(json_util.dumps(doc))
+
     @staticmethod
     async def get_cached_data(key: str) -> Optional[Dict]:
         """

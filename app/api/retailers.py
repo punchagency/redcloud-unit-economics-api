@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
+
 from app.models.schemas import HTTPError, RetailerMetrics
 from app.services.retailer_service import retailer_service
 

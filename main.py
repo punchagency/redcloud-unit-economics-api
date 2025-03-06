@@ -1,8 +1,9 @@
 import uvicorn
-from app.api import base_router
-from app.core.config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.api import base_router
+from app.core.config import settings
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -42,4 +43,9 @@ async def health():
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=settings.DEBUG and settings.ENVIRONMENT.lower() == "development",
+    )

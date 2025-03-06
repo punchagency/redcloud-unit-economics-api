@@ -1,6 +1,7 @@
 import json
 
 import redis
+
 from app.core.config import settings
 
 

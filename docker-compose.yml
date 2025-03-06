@@ -3,7 +3,7 @@ services:
     # build:
     #   context: .
     #   dockerfile: Dockerfile
-    image: unit-econ:develop
+    image: lueylu/unit-econ:develop
     ports:
       - "8000:8000"
     env_file:
@@ -53,7 +53,7 @@ services:
 
   certbot:
     image: certbot/certbot:latest
-    command: certonly --webroot --webroot-path=/var/www/certbot --force-renewal --email lueyiyornumbe@punch.agency --agree-tos --no-eff-email -d whitespace.punchapps.cool
+    command: certonly --webroot --webroot-path=/var/www/certbot --force-renewal --email lueyiyornumbe@punch.agency --agree-tos --no-eff-email -d unit-economic.punchapps.cool
     #command: renew
     volumes:
       - ./nginx/certbot/www/:/var/www/certbot/:rw

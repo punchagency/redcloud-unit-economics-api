@@ -1,15 +1,16 @@
 services:
-  api:
+  web:
     # build:
     #   context: .
     #   dockerfile: Dockerfile
-    image: retail-economics-api:latest
+    image: lueylu/unit-econ:develop
     ports:
       - "8000:8000"
     env_file:
       - .env
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp_config.json
+      - PYTHONPATH=/app
     volumes:
       - ./gcp_config.json:/app/gcp_config.json
     healthcheck:
@@ -47,16 +48,19 @@ services:
       - ./nginx/certbot/www:/var/www/certbot/:ro
       - ./nginx/certbot/conf/:/etc/nginx/ssl/:ro
     depends_on:
-      - api
+      - web
     restart: unless-stopped
 
   certbot:
     image: certbot/certbot:latest
-    command: certonly --webroot --webroot-path=/var/www/certbot --force-renewal --email lueyiyornumbe@punch.agency --agree-tos --no-eff-email -d whitespace.punchapps.cool
+    command: certonly --webroot --webroot-path=/var/www/certbot --force-renewal --email lueyiyornumbe@punch.agency --agree-tos --no-eff-email -d unit-economic.punchapps.cool
     #command: renew
     volumes:
       - ./nginx/certbot/www/:/var/www/certbot/:rw
       - ./nginx/certbot/conf/:/etc/letsencrypt/:rw
+
+volumes:
+  redis_data:
 
 networks:
   default:

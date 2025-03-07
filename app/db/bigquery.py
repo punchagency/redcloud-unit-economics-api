@@ -1,11 +1,12 @@
 from functools import lru_cache
 from typing import Dict, List, Optional
 
-from core.config import settings
 from google.api_core import exceptions, retry
 from google.cloud import bigquery
 from google.cloud.bigquery import QueryJobConfig, ScalarQueryParameter
 from rich.console import Console
+
+from app.core.config import settings
 
 console = Console()
 
@@ -260,7 +261,7 @@ class BigQueryClient:
 
         query = f"""
         {self.get_base_retailer_query()}
-        WHERE LOWER(Store_Name) LIKE LOWER(@query)
+        WHERE LOWER(seller_name) LIKE LOWER(@query)
         """
 
         if city:

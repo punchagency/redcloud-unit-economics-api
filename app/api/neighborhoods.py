@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
-from models.schemas import HTTPError, NeighborhoodMetrics
-from services.neighborhood_service import neighborhood_service
+
+from app.models.schemas import HTTPError, NeighborhoodMetrics
+from app.services.neighborhood_service import neighborhood_service
 
 router = APIRouter()
 

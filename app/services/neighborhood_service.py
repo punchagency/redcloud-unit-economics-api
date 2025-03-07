@@ -1,7 +1,7 @@
 from typing import Dict
 
-from db.bigquery import bigquery_client
-from services.base import BaseService
+from app.db.bigquery import bigquery_client
+from app.services.base import BaseService
 
 
 class NeighborhoodService(BaseService):
@@ -15,9 +15,9 @@ class NeighborhoodService(BaseService):
             neighborhood_name (str): Name of the neighborhood
 
         Returns:
-            Dict: Neighborhood metrics including retailer density, revenue, 
-                 and individual retailer data
-        
+            Dict: Neighborhood metrics including retailer density, revenue,
+                and individual retailer data
+
         Note:
             Results are cached to improve performance
         """

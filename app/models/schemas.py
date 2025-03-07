@@ -203,6 +203,7 @@ class LGA(BaseModel):
 
 class Period(BaseModel):
     """Schema for time periods"""
+
     id: Optional[str] = Field(None, alias="_id")
     start_date: datetime
     end_date: datetime
@@ -215,19 +216,22 @@ class Period(BaseModel):
                 "_id": "67c879945e9a7a0da4997d1e",
                 "start_date": "2022-01-01T00:00:00Z",
                 "end_date": "2022-01-07T23:59:59Z",
-                "period_name": "001_007_2022"
+                "period_name": "001_007_2022",
             }
         }
 
 
 class SalesMetrics(BaseModel):
     """Schema for sales metrics by state/LGA"""
+
     id: Optional[str] = Field(None, alias="_id")
     lga: str = Field(..., description="LGA ObjectId reference")
     state: str = Field(..., description="State ObjectId reference")
     date: str = Field(..., description="Period ObjectId reference")
-    revenue_period_lga: float
-    ttv_period_lga: float
+    revenue_period_lga: float | None
+    ttv_period_lga: float | None
+    retailer_density: float | int | str | None
+    transaction_frequency: float | int | str | None
 
     class Config:
         populate_by_name = True
@@ -238,13 +242,16 @@ class SalesMetrics(BaseModel):
                 "state": "67c85980e71bd75bbbb1d1b1",
                 "date": "67c879945e9a7a0da4997d35",
                 "revenue_period_lga": 4.62,
-                "ttv_period_lga": 230.84
+                "ttv_period_lga": 230.84,
+                "retailer_density": 10,
+                "transaction_frequency": 2,
             }
         }
 
 
 class SalesMetricsResponse(BaseModel):
     """Response schema for sales metrics endpoints"""
+
     data: list[SalesMetrics]
     total: int
     page: Optional[int] = None

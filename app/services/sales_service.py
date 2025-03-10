@@ -11,6 +11,40 @@ class SalesService(BaseService):
     """Service for handling sales metrics operations"""
 
     @staticmethod
+    def transform_to_geojson(metric: dict) -> dict:
+        """
+        Transforms a sales metric document into a GeoJSON Feature.
+        Assumes the document has a populated 'lga' field that contains geometry and a name.
+        """
+        lga_info = metric.get("lga", {})
+        feature = {
+            "type": "Feature",
+            "id": str(metric.get("_id")),
+            "properties": {
+                "name": lga_info.get("lga_name", ""),  # use lga_name as feature name
+                "density": metric.get(
+                    "retailer_density"
+                ),  # use retailer_density as density
+                "revenue": metric.get("revenue_period_lga"),
+                "ttv": metric.get("ttv_period_lga"),
+                "transaction_frequency": metric.get("transaction_frequency"),
+            },
+            "geometry": lga_info.get(
+                "geometry"
+            ),  # use the geometry from the lga document
+        }
+        return feature
+
+    @staticmethod
+    def serialize_geojson(metric: dict) -> dict:
+        """
+        Transforms a MongoDB document into the desired GeoJSON Feature shape,
+        then delegates the JSON conversion to the BaseService's serializer.
+        """
+        feature = SalesService.transform_to_geojson(metric)
+        return BaseService.serialize_mongodb_doc(feature)
+
+    @staticmethod
     async def get_sales_metrics(
         skip: int = 0,
         limit: int = 10,
@@ -70,17 +104,34 @@ class SalesService(BaseService):
             )
 
             # Get paginated results
-            metrics = await mongodb_client.find_many(
-                collection_name="state_boundaries_unit",
-                query=metrics_query,
-                skip=skip,
-                limit=limit,
-                sort=[("date", 1)],
+            # metrics = await mongodb_client.find_many(
+            #     collection_name="state_boundaries_unit",
+            #     query=metrics_query,
+            #     skip=skip,
+            #     limit=limit,
+            #     sort=[("date", 1)],
+            # )
+
+            # Retrieve paginated results using the async query builder with population for "lga"
+            metrics = await (
+                mongodb_client.query("state_boundaries_unit", metrics_query)
+                .populate(
+                    "lga", "lga_boundaries"
+                )  # Explicitly map "lga" to "lga_boundaries" collection.
+                .skip(skip)
+                .limit(limit)
+                .sort([("date", 1)])
+                .exec()
             )
 
-            # Serialize results
+            # # Serialize results
+            # serialized_metrics = [
+            #     SalesService.serialize_mongodb_doc(metric) for metric in metrics
+            # ]
+
+            # Delegate JSON serialization to the BaseService by calling our helper.
             serialized_metrics = [
-                SalesService.serialize_mongodb_doc(metric) for metric in metrics
+                SalesService.serialize_geojson(metric) for metric in metrics
             ]
 
             result = {

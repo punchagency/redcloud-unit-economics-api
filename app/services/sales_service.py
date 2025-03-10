@@ -49,8 +49,7 @@ class SalesService(BaseService):
 
             if period_query:
                 periods = await mongodb_client.find_many(
-                    collection_name="periods",
-                    query=period_query
+                    collection_name="periods", query=period_query
                 )
                 period_ids = [str(period["_id"]) for period in periods]
             else:
@@ -66,10 +65,9 @@ class SalesService(BaseService):
                 metrics_query["state"] = ObjectId(state_id)
 
             # Get total count
-            total = len(await mongodb_client.find_many(
-                "state_boundaries_unit",
-                metrics_query
-            ))
+            total = len(
+                await mongodb_client.find_many("state_boundaries_unit", metrics_query)
+            )
 
             # Get paginated results
             metrics = await mongodb_client.find_many(
@@ -77,7 +75,7 @@ class SalesService(BaseService):
                 query=metrics_query,
                 skip=skip,
                 limit=limit,
-                sort=[("date", 1)]
+                sort=[("date", 1)],
             )
 
             # Serialize results
@@ -89,7 +87,7 @@ class SalesService(BaseService):
                 "data": serialized_metrics,
                 "total": total,
                 "page": skip // limit + 1 if limit > 0 else 1,
-                "page_size": limit
+                "page_size": limit,
             }
 
             # Cache results
@@ -101,4 +99,4 @@ class SalesService(BaseService):
 
 
 # Create singleton instance
-sales_service = SalesService() 
+sales_service = SalesService()

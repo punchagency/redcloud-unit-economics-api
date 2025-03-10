@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from rich.console import Console
+import asyncio
 
 from app.core.config import settings
 
@@ -187,6 +188,143 @@ class MongoDBClient:
         except Exception as e:
             console.log(f"[red]Error in delete_one: {str(e)}[/red]")
             raise
+
+    def query(self, collection_name: str, query: Dict[str, Any] = {}) -> "QueryBuilder":
+        """
+        Start a chainable query on a given collection.
+        """
+        return QueryBuilder(self, collection_name, query)
+
+
+class QueryBuilder:
+    """
+    A chainable query builder that supports methods such as limit, skip, sort, and populate.
+    The populate method replaces a field's reference (e.g., an ObjectID) with the actual document.
+    """
+
+    def __init__(
+        self,
+        mongodb_client: MongoDBClient,
+        collection_name: str,
+        query: Dict[str, Any] = {},
+    ):
+        self.mongodb_client = mongodb_client
+        self.collection = mongodb_client.get_collection(collection_name)
+        self.query = query
+        self._limit = 0
+        self._skip = 0
+        self._sort = None
+        self._populate_fields: List[str] = []
+
+    def limit(self, limit: int) -> "QueryBuilder":
+        self._limit = limit
+        return self
+
+    def skip(self, skip: int) -> "QueryBuilder":
+        self._skip = skip
+        return self
+
+    def sort(self, sort: List[tuple]) -> "QueryBuilder":
+        self._sort = sort
+        return self
+
+    def populate(
+        self, field: str, target_collection: Optional[str] = None
+    ) -> "QueryBuilder":
+        """
+        Specify a field to populate.
+        Optionally, provide the target collection name.
+        If target_collection is None, defaults to the field name.
+        """
+        self._populate_fields.append((field, target_collection or field))
+        return self
+
+    async def exec(self) -> List[Dict[str, Any]]:
+        # Wrap the synchronous find operation in asyncio.to_thread
+        def get_documents():
+            cursor = self.collection.find(self.query)
+            if self._skip:
+                cursor = cursor.skip(self._skip)
+            if self._limit:
+                cursor = cursor.limit(self._limit)
+            if self._sort:
+                cursor = cursor.sort(self._sort)
+            return list(cursor)
+
+        documents = await asyncio.to_thread(get_documents)
+        if not documents:
+            return documents
+
+        # Batch populate for each specified field.
+        for field, target_coll in self._populate_fields:
+            ref_ids = set()
+            for doc in documents:
+                if field in doc:
+                    value = doc[field]
+                    if isinstance(value, list):
+                        ref_ids.update(value)
+                    else:
+                        ref_ids.add(value)
+            if not ref_ids:
+                continue
+
+            ref_collection = self.mongodb_client.get_collection(target_coll)
+
+            def get_fetched_docs():
+                return list(ref_collection.find({"_id": {"$in": list(ref_ids)}}))
+
+            fetched_docs = await asyncio.to_thread(get_fetched_docs)
+            fetched_mapping = {d["_id"]: d for d in fetched_docs}
+
+            for doc in documents:
+                if field in doc:
+                    value = doc[field]
+                    if isinstance(value, list):
+                        doc[field] = [fetched_mapping.get(v, v) for v in value]
+                    else:
+                        doc[field] = fetched_mapping.get(value, value)
+        return documents
+
+        # Populate each document for every specified field.
+        # for doc in documents:
+        #     for field in self._populate_fields:
+        #         if field in doc:
+        #             ref_id = doc[field]
+        #             ref_collection = self.mongodb_client.get_collection(field)
+        #             populated_doc = ref_collection.find_one({"_id": ref_id})
+        #             doc[field] = populated_doc
+
+        # return documents
+
+    async def exec_one(self) -> Optional[Dict[str, Any]]:
+        doc = await self.collection.find_one(self.query)
+        if not doc:
+            return doc
+
+        for field, target_coll in self._populate_fields:
+            if field in doc:
+                value = doc[field]
+                ref_collection = self.mongodb_client.get_collection(target_coll)
+                if isinstance(value, list):
+                    fetched_docs = await ref_collection.find(
+                        {"_id": {"$in": value}}
+                    ).to_list(length=len(value))
+                    fetched_mapping = {d["_id"]: d for d in fetched_docs}
+                    doc[field] = [fetched_mapping.get(v, v) for v in value]
+                else:
+                    populated_doc = await ref_collection.find_one({"_id": value})
+                    doc[field] = populated_doc if populated_doc else value
+        return doc
+
+        # doc = self.collection.find_one(self.query)
+        # if doc:
+        #     for field in self._populate_fields:
+        #         if field in doc:
+        #             ref_id = doc[field]
+        #             ref_collection = self.mongodb_client.get_collection(field)
+        #             populated_doc = ref_collection.find_one({"_id": ref_id})
+        #             doc[field] = populated_doc
+        # return doc
 
 
 # Create singleton instance

@@ -11,37 +11,26 @@ class SalesService(BaseService):
     """Service for handling sales metrics operations"""
 
     @staticmethod
-    def transform_to_geojson(metric: dict) -> dict:
+    def transform_aggregated_to_geojson(agg_doc: dict) -> dict:
         """
-        Transforms a sales metric document into a GeoJSON Feature.
-        Assumes the document has a populated 'lga' field that contains geometry and a name.
+        Transforms an aggregated document (grouped by LGA) into a GeoJSON Feature.
+        Expects that the aggregation has looked up the corresponding LGA document
+        (from the 'lga_boundaries' collection) in the 'lga' field.
         """
-        lga_info = metric.get("lga", {})
+        lga = agg_doc.get("lga", {})
         feature = {
             "type": "Feature",
-            "id": str(metric.get("_id")),
+            "id": str(lga.get("_id")),
             "properties": {
-                "name": lga_info.get("lga_name", ""),  # use lga_name as feature name
-                "density": metric.get(
-                    "retailer_density"
-                ),  # use retailer_density as density
-                "revenue": metric.get("revenue_period_lga"),
-                "ttv": metric.get("ttv_period_lga"),
-                "transaction_frequency": metric.get("transaction_frequency"),
+                "name": lga.get("lga_name", ""),
+                "count": agg_doc.get("count"),
+                "avgRetailerDensity": agg_doc.get("avgRetailerDensity"),
+                "avgRevenue": agg_doc.get("avgRevenue"),
+                "avgTTV": agg_doc.get("avgTTV"),
+                "avgTransactionFrequency": agg_doc.get("avgTransactionFrequency"),
             },
-            "geometry": lga_info.get(
-                "geometry"
-            ),  # use the geometry from the lga document
+            "geometry": lga.get("geometry"),
         }
-        return feature
-
-    @staticmethod
-    def serialize_geojson(metric: dict) -> dict:
-        """
-        Transforms a MongoDB document into the desired GeoJSON Feature shape,
-        then delegates the JSON conversion to the BaseService's serializer.
-        """
-        feature = SalesService.transform_to_geojson(metric)
         return BaseService.serialize_mongodb_doc(feature)
 
     @staticmethod
@@ -98,50 +87,84 @@ class SalesService(BaseService):
             if state_id:
                 metrics_query["state"] = ObjectId(state_id)
 
-            # Get total count
-            total = len(
-                await mongodb_client.find_many("state_boundaries_unit", metrics_query)
+            # Define the base aggregation pipeline.
+            pipeline_base: List[Dict] = [
+                {"$match": metrics_query},
+                {
+                    "$group": {
+                        "_id": "$lga",
+                        "count": {"$sum": 1},
+                        "avgRetailerDensity": {"$avg": "$retailer_density"},
+                        "avgRevenue": {"$avg": "$revenue_period_lga"},
+                        "avgTTV": {"$avg": "$ttv_period_lga"},
+                        "avgTransactionFrequency": {"$avg": "$transaction_frequency"},
+                    }
+                },
+                {
+                    "$lookup": {
+                        "from": "lga_boundaries",
+                        "localField": "_id",
+                        "foreignField": "_id",
+                        "as": "lga",
+                    }
+                },
+                {"$unwind": "$lga"},
+                {
+                    "$project": {
+                        "_id": 0,
+                        "lga": 1,
+                        "count": 1,
+                        "avgRetailerDensity": 1,
+                        "avgRevenue": 1,
+                        "avgTTV": 1,
+                        "avgTransactionFrequency": 1,
+                    }
+                },
+            ]
+
+            # Define the $facet stage for pagination.
+            facet_stage = {
+                "$facet": {
+                    "data": [{"$skip": skip}, {"$limit": limit}],
+                    "total": [{"$count": "total"}],
+                }
+            }
+
+            # Combine pipeline base with facet.
+            full_pipeline = pipeline_base + [facet_stage]
+
+            # Build the aggregation using the AggregateBuilder.
+            # (Assuming AggregateBuilder supports add_stage(stage) and exec() to run the pipeline.)
+            agg_builder = mongodb_client.aggregate("state_boundaries_unit")
+            for stage in full_pipeline:
+                agg_builder.add_stage(stage)
+
+            agg_result = await agg_builder.exec()
+
+            # agg_result is a list; extract the first document.
+            result_doc = (
+                agg_result[0] if agg_result and isinstance(agg_result, list) else {}
             )
-
-            # Get paginated results
-            # metrics = await mongodb_client.find_many(
-            #     collection_name="state_boundaries_unit",
-            #     query=metrics_query,
-            #     skip=skip,
-            #     limit=limit,
-            #     sort=[("date", 1)],
-            # )
-
-            # Retrieve paginated results using the async query builder with population for "lga"
-            metrics = await (
-                mongodb_client.query("state_boundaries_unit", metrics_query)
-                .populate(
-                    "lga", "lga_boundaries"
-                )  # Explicitly map "lga" to "lga_boundaries" collection.
-                .skip(skip)
-                .limit(limit)
-                .sort([("date", 1)])
-                .exec()
+            total = (
+                result_doc.get("total", [{}])[0].get("total", 0)
+                if result_doc.get("total")
+                else 0
             )
+            aggregated_results = result_doc.get("data", [])
 
-            # # Serialize results
-            # serialized_metrics = [
-            #     SalesService.serialize_mongodb_doc(metric) for metric in metrics
-            # ]
-
-            # Delegate JSON serialization to the BaseService by calling our helper.
-            serialized_metrics = [
-                SalesService.serialize_geojson(metric) for metric in metrics
+            # Transform each aggregated document into a GeoJSON Feature.
+            aggregated_features = [
+                SalesService.transform_aggregated_to_geojson(doc)
+                for doc in aggregated_results
             ]
 
             result = {
-                "data": serialized_metrics,
+                "data": aggregated_features,
                 "total": total,
                 "page": skip // limit + 1 if limit > 0 else 1,
                 "page_size": limit,
             }
 
-            # Cache results
             await SalesService.set_cached_data(cache_key, result)
             return result
 

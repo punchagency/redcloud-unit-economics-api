@@ -195,6 +195,61 @@ class MongoDBClient:
         """
         return QueryBuilder(self, collection_name, query)
 
+    def aggregate(self, collection_name: str) -> "AggregateBuilder":
+        """
+        Start a chainable aggregation on a given collection.
+        """
+        return AggregateBuilder(self, collection_name)
+
+
+class AggregateBuilder:
+    """
+    A chainable aggregate builder that supports adding aggregation stages.
+    You can chain stages like $match, $group, $sort, etc.
+    """
+
+    def __init__(self, mongodb_client: MongoDBClient, collection_name: str):
+        self.mongodb_client = mongodb_client
+        self.collection = mongodb_client.get_collection(collection_name)
+        self.pipeline: List[Dict[str, Any]] = []
+
+    def match(self, criteria: Dict[str, Any]) -> "AggregateBuilder":
+        self.pipeline.append({"$match": criteria})
+        return self
+
+    def group(self, group_spec: Dict[str, Any]) -> "AggregateBuilder":
+        self.pipeline.append({"$group": group_spec})
+        return self
+
+    def sort(self, sort_spec: Dict[str, Any]) -> "AggregateBuilder":
+        self.pipeline.append({"$sort": sort_spec})
+        return self
+
+    def project(self, projection: Dict[str, Any]) -> "AggregateBuilder":
+        self.pipeline.append({"$project": projection})
+        return self
+
+    def skip(self, skip: int) -> "AggregateBuilder":
+        self.pipeline.append({"$skip": skip})
+        return self
+
+    def limit(self, limit: int) -> "AggregateBuilder":
+        self.pipeline.append({"$limit": limit})
+        return self
+
+    def add_stage(self, stage: Dict[str, Any]) -> "AggregateBuilder":
+        """
+        Add a custom aggregation stage.
+        """
+        self.pipeline.append(stage)
+        return self
+
+    async def exec(self) -> List[Dict[str, Any]]:
+        def _aggregate():
+            return list(self.collection.aggregate(self.pipeline))
+
+        return await asyncio.to_thread(_aggregate)
+
 
 class QueryBuilder:
     """

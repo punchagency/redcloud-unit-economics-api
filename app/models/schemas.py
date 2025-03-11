@@ -256,3 +256,61 @@ class SalesMetricsResponse(BaseModel):
     total: int
     page: Optional[int] = None
     page_size: Optional[int] = None
+
+
+class State(BaseModel):
+    """Schema for State data"""
+    id: Optional[str] = Field(None, alias="_id", description="MongoDB ObjectId")
+    state_name: str = Field(..., description="Name of the state")
+    state_code: str = Field(
+        ..., 
+        description="Unique code for the state (e.g., 'NG001')",
+        pattern="^NG\\d{3}$"
+    )
+    country_name: str = Field(..., description="Name of the country")
+    geometry: Geometry = Field(..., description="GeoJSON MultiPolygon geometry of the state")
+
+    class Config:
+        populate_by_name = True
+        json_schema_extra = {
+            "example": {
+                "_id": "67c85980e71bd75bbbb1d1b1",
+                "state_name": "Abia",
+                "state_code": "NG001",
+                "country_name": "Nigeria",
+                "geometry": {
+                    "type": "MultiPolygon",
+                    "coordinates": [[[[7.401109, 5.081947],
+                                   [7.400133, 5.082370],
+                                   [7.398485, 5.082554]]]]
+                }
+            }
+        }
+
+
+class StateResponse(BaseModel):
+    """Response schema for state endpoints"""
+    data: List[State] = Field(..., description="List of state records")
+    total: int = Field(..., description="Total number of records")
+    page: Optional[int] = Field(None, description="Current page number")
+    page_size: Optional[int] = Field(None, description="Number of records per page")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "data": [{
+                    "state_name": "Abia",
+                    "state_code": "NG001",
+                    "country_name": "Nigeria",
+                    "geometry": {
+                        "type": "MultiPolygon",
+                        "coordinates": [[[[7.401109, 5.081947],
+                                       [7.400133, 5.082370],
+                                       [7.398485, 5.082554]]]]
+                    }
+                }],
+                "total": 1,
+                "page": 1,
+                "page_size": 10
+            }
+        }

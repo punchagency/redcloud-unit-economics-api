@@ -6,7 +6,7 @@ from .neighborhoods import router as neighborhoods_router
 from .retailers import router as retailers_router
 from .sales import router as sales_router
 from .states import router as states_router
-
+from .brands import router as brands_router
 base_router = APIRouter()
 
 base_router.include_router(cities_router, prefix="/cities", tags=["Cities"])
@@ -17,3 +17,4 @@ base_router.include_router(
 )
 base_router.include_router(retailers_router, prefix="/retailers", tags=["Retailers"])
 base_router.include_router(sales_router, prefix="/sales", tags=["Sales"])
+base_router.include_router(brands_router, prefix="/brands", tags=["Brands"])

@@ -260,15 +260,18 @@ class SalesMetricsResponse(BaseModel):
 
 class State(BaseModel):
     """Schema for State data"""
+
     id: Optional[str] = Field(None, alias="_id", description="MongoDB ObjectId")
     state_name: str = Field(..., description="Name of the state")
     state_code: str = Field(
-        ..., 
+        ...,
         description="Unique code for the state (e.g., 'NG001')",
-        pattern="^NG\\d{3}$"
+        pattern="^NG\\d{3}$",
     )
     country_name: str = Field(..., description="Name of the country")
-    geometry: Geometry = Field(..., description="GeoJSON MultiPolygon geometry of the state")
+    geometry: Geometry = Field(
+        ..., description="GeoJSON MultiPolygon geometry of the state"
+    )
 
     class Config:
         populate_by_name = True
@@ -280,16 +283,23 @@ class State(BaseModel):
                 "country_name": "Nigeria",
                 "geometry": {
                     "type": "MultiPolygon",
-                    "coordinates": [[[[7.401109, 5.081947],
-                                   [7.400133, 5.082370],
-                                   [7.398485, 5.082554]]]]
-                }
+                    "coordinates": [
+                        [
+                            [
+                                [7.401109, 5.081947],
+                                [7.400133, 5.082370],
+                                [7.398485, 5.082554],
+                            ]
+                        ]
+                    ],
+                },
             }
         }
 
 
 class StateResponse(BaseModel):
     """Response schema for state endpoints"""
+
     data: List[State] = Field(..., description="List of state records")
     total: int = Field(..., description="Total number of records")
     page: Optional[int] = Field(None, description="Current page number")
@@ -298,19 +308,98 @@ class StateResponse(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "data": [{
-                    "state_name": "Abia",
-                    "state_code": "NG001",
-                    "country_name": "Nigeria",
-                    "geometry": {
-                        "type": "MultiPolygon",
-                        "coordinates": [[[[7.401109, 5.081947],
-                                       [7.400133, 5.082370],
-                                       [7.398485, 5.082554]]]]
+                "data": [
+                    {
+                        "state_name": "Abia",
+                        "state_code": "NG001",
+                        "country_name": "Nigeria",
+                        "geometry": {
+                            "type": "MultiPolygon",
+                            "coordinates": [
+                                [
+                                    [
+                                        [7.401109, 5.081947],
+                                        [7.400133, 5.082370],
+                                        [7.398485, 5.082554],
+                                    ]
+                                ]
+                            ],
+                        },
                     }
-                }],
+                ],
                 "total": 1,
                 "page": 1,
-                "page_size": 10
+                "page_size": 10,
             }
         }
+
+
+class Brand(BaseModel):
+    """Schema for brand data"""
+
+    id: str = Field(None, alias="_id", description="MongoDB ObjectId")
+    brand_name: str = Field(..., description="Name of the brand")
+
+    class Config:
+        json_schema_extra = {
+            "example": {"id": "67d43b1f48b591196ff405d7", "brand_name": "Sunlight"}
+        }
+
+
+class BrandMetrics(BaseModel):
+    """Schema for brand boundaries data"""
+
+    id: str = Field(None, alias="_id", description="Brand boundary ID")
+    lga_id: str = Field(..., description="LGA ID")
+    state_id: str = Field(..., description="State ID")
+    date_id: str = Field(..., description="Date ID")
+    brand_id: str = Field(..., description="Brand ID")
+    revenue_period_lga: float = Field(..., description="Revenue for LGA in period")
+    ttv_period_lga: float = Field(
+        ..., description="Total transaction value for LGA in period"
+    )
+    retailer_density: int = Field(..., description="Density of retailers")
+    transaction_frequency: int = Field(..., description="Frequency of transactions")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "67d444e848b591196ff4095b",
+                "lga_id": "67c85d7782e815e4ed9c625f",
+                "state_id": "67c8597be71bd75bbbb1d196",
+                "date_id": "67c879945e9a7a0da4997d96",
+                "brand_id": "67d43b1f48b591196ff405da",
+                "revenue_period_lga": 467.55,
+                "ttv_period_lga": 31170.00,
+                "retailer_density": 2,
+                "transaction_frequency": 5,
+            }
+        }
+
+
+class BrandResponse(BaseModel):
+    """Schema for paginated brand response"""
+
+    data: list[Brand]
+    total: int = Field(..., description="Total number of records")
+    page: int = Field(..., description="Current page number")
+    page_size: int = Field(..., description="Number of items per page")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "data": [{"id": "67d43b1f48b591196ff405d7", "brand_name": "Sunlight"}],
+                "total": 1,
+                "page": 1,
+                "page_size": 10,
+            }
+        }
+
+
+class BrandMetricsResponse(BaseModel):
+    """Response schema for sales metrics endpoints"""
+
+    data: list[BrandMetrics]
+    total: int
+    page: Optional[int] = None
+    page_size: Optional[int] = None

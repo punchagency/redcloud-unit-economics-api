@@ -88,6 +88,8 @@ class SalesService(BaseService):
             metrics_query = {}
             if period_ids:
                 metrics_query["date"] = {"$in": [ObjectId(pid) for pid in period_ids]}
+            else:
+                metrics_query["date"] = {"$exists": False}
             if lga_id:
                 metrics_query["lga"] = ObjectId(lga_id)
             if state_id:

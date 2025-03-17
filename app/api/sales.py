@@ -15,27 +15,20 @@ router = APIRouter()
     response_model=SalesMetricsResponse,
     responses={400: {"model": HTTPError}, 500: {"model": HTTPError}},
     summary="Get Sales Metrics",
-    description="Get sales metrics filtered by date range and/or location"
+    description="Get sales metrics filtered by date range and/or location",
 )
 async def get_sales_metrics(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(10, ge=1, le=1000, description="Items per page"),
     start_date: Optional[datetime] = Query(
-        None,
-        description="Filter by start date (ISO format)"
+        None, description="Filter by start date (ISO format)"
     ),
     end_date: Optional[datetime] = Query(
-        None,
-        description="Filter by end date (ISO format)"
+        None, description="Filter by end date (ISO format)"
     ),
-    lga_id: Optional[str] = Query(
-        None,
-        description="Filter by LGA ObjectId"
-    ),
-    state_id: Optional[str] = Query(
-        None,
-        description="Filter by State ObjectId"
-    )
+    lga_id: Optional[str] = Query(None, description="Filter by LGA ObjectId"),
+    brand_id: Optional[str] = Query(None, description="Filter by Brand ObjectId"),
+    state_id: Optional[str] = Query(None, description="Filter by State ObjectId"),
 ):
     """Get sales metrics with optional filters"""
     try:
@@ -46,8 +39,9 @@ async def get_sales_metrics(
             start_date=start_date,
             end_date=end_date,
             lga_id=lga_id,
-            state_id=state_id
+            state_id=state_id,
+            brand_id=brand_id,
         )
         return JSONResponse(content=result)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) 
+        raise HTTPException(status_code=500, detail=str(e))

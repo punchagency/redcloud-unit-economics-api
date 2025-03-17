@@ -18,11 +18,14 @@ class SalesService(BaseService):
         (from the 'lga_boundaries' collection) in the 'lga' field.
         """
         lga = agg_doc.get("lga", {})
+        brand = agg_doc.get("brand", {})
+
         feature = {
             "type": "Feature",
             "id": str(lga.get("_id")),
             "properties": {
                 "name": lga.get("lga_name", ""),
+                "brand_name": brand.get("brand_name", ""),
                 "count": agg_doc.get("count"),
                 "avgRetailerDensity": agg_doc.get("avgRetailerDensity"),
                 "avgRevenue": agg_doc.get("avgRevenue"),
@@ -41,6 +44,7 @@ class SalesService(BaseService):
         end_date: Optional[datetime] = None,
         lga_id: Optional[str] = None,
         state_id: Optional[str] = None,
+        brand_id: Optional[str] = None,
     ) -> Dict:
         """
         Get sales metrics filtered by date range and/or location.
@@ -52,13 +56,14 @@ class SalesService(BaseService):
             end_date: Optional end date filter
             lga_id: Optional LGA ObjectId
             state_id: Optional State ObjectId
+            brand_id: Optional Brand ObjectId.
 
         Returns:
             Dict containing paginated sales metrics
         """
         try:
             # Build cache key
-            cache_key = f"sales_metrics_{skip}_{limit}_{start_date}_{end_date}_{lga_id}_{state_id}"
+            cache_key = f"sales_metrics_{skip}_{limit}_{start_date}_{end_date}_{lga_id}_{state_id}_{brand_id}"
             cached_data = await SalesService.get_cached_data(cache_key)
             if cached_data:
                 return cached_data
@@ -74,6 +79,7 @@ class SalesService(BaseService):
                 periods = await mongodb_client.find_many(
                     collection_name="periods", query=period_query
                 )
+
                 period_ids = [str(period["_id"]) for period in periods]
             else:
                 period_ids = []
@@ -88,13 +94,15 @@ class SalesService(BaseService):
                 metrics_query["lga"] = ObjectId(lga_id)
             if state_id:
                 metrics_query["state"] = ObjectId(state_id)
+            if brand_id:
+                metrics_query["brand"] = ObjectId(brand_id)
 
             # Define the base aggregation pipeline.
             pipeline_base: List[Dict] = [
                 {"$match": metrics_query},
                 {
                     "$group": {
-                        "_id": "$lga",
+                        "_id": {"lga": "$lga", "brand": "$brand"},
                         "count": {"$sum": 1},
                         "avgRetailerDensity": {"$avg": "$retailer_density"},
                         "avgRevenue": {"$avg": "$revenue_period_lga"},
@@ -105,16 +113,27 @@ class SalesService(BaseService):
                 {
                     "$lookup": {
                         "from": "lga_boundaries",
-                        "localField": "_id",
+                        "localField": "_id.lga",
                         "foreignField": "_id",
                         "as": "lga",
                     }
                 },
                 {"$unwind": "$lga"},
+                # Lookup Brand details from the brands collection.
+                {
+                    "$lookup": {
+                        "from": "brands",
+                        "localField": "_id.brand",
+                        "foreignField": "_id",
+                        "as": "brand",
+                    }
+                },
+                {"$unwind": "$brand"},
                 {
                     "$project": {
                         "_id": 0,
                         "lga": 1,
+                        "brand": 1,
                         "count": 1,
                         "avgRetailerDensity": 1,
                         "avgRevenue": 1,
@@ -137,7 +156,7 @@ class SalesService(BaseService):
 
             # Build the aggregation using the AggregateBuilder.
             # (Assuming AggregateBuilder supports add_stage(stage) and exec() to run the pipeline.)
-            agg_builder = mongodb_client.aggregate("state_boundaries_unit")
+            agg_builder = mongodb_client.aggregate("brand_boundaries_unit")
             for stage in full_pipeline:
                 agg_builder.add_stage(stage)
 

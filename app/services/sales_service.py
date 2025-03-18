@@ -16,22 +16,29 @@ class SalesService(BaseService):
         Transforms an aggregated document (grouped by LGA) into a GeoJSON Feature.
         Expects that the aggregation has looked up the corresponding LGA document
         (from the 'lga_boundaries' collection) in the 'lga' field.
+        Only includes "brand_name" in the output if brand data is present.
         """
         lga = agg_doc.get("lga", {})
-        brand = agg_doc.get("brand", {})
+
+        # Build the properties dictionary with required fields.
+        properties = {
+            "name": lga.get("lga_name", ""),
+            "count": agg_doc.get("count"),
+            "avgRetailerDensity": agg_doc.get("avgRetailerDensity"),
+            "avgRevenue": agg_doc.get("avgRevenue"),
+            "avgTTV": agg_doc.get("avgTTV"),
+            "avgTransactionFrequency": agg_doc.get("avgTransactionFrequency"),
+        }
+
+        # Only add "brand_name" if brand exists and contains a non-empty "brand_name"
+        brand = agg_doc.get("brand")
+        if brand and isinstance(brand, dict) and brand.get("brand_name"):
+            properties["brand_name"] = brand.get("brand_name")
 
         feature = {
             "type": "Feature",
             "id": str(lga.get("_id")),
-            "properties": {
-                "name": lga.get("lga_name", ""),
-                "brand_name": brand.get("brand_name", ""),
-                "count": agg_doc.get("count"),
-                "avgRetailerDensity": agg_doc.get("avgRetailerDensity"),
-                "avgRevenue": agg_doc.get("avgRevenue"),
-                "avgTTV": agg_doc.get("avgTTV"),
-                "avgTransactionFrequency": agg_doc.get("avgTransactionFrequency"),
-            },
+            "properties": properties,
             "geometry": lga.get("geometry"),
         }
         return BaseService.serialize_mongodb_doc(feature)
@@ -98,11 +105,16 @@ class SalesService(BaseService):
                 metrics_query["brand"] = ObjectId(brand_id)
 
             # Define the base aggregation pipeline.
+            # Build the group _id dynamically.
+            group_id = {"lga": "$lga"}
+            if brand_id:
+                group_id["brand"] = "$brand"
+
             pipeline_base: List[Dict] = [
                 {"$match": metrics_query},
                 {
                     "$group": {
-                        "_id": {"lga": "$lga", "brand": "$brand"},
+                        "_id": group_id,
                         "count": {"$sum": 1},
                         "avgRetailerDensity": {"$avg": "$retailer_density"},
                         "avgRevenue": {"$avg": "$revenue_period_lga"},
@@ -119,29 +131,40 @@ class SalesService(BaseService):
                     }
                 },
                 {"$unwind": "$lga"},
-                # Lookup Brand details from the brands collection.
-                {
-                    "$lookup": {
-                        "from": "brands",
-                        "localField": "_id.brand",
-                        "foreignField": "_id",
-                        "as": "brand",
-                    }
-                },
-                {"$unwind": "$brand"},
-                {
-                    "$project": {
-                        "_id": 0,
-                        "lga": 1,
-                        "brand": 1,
-                        "count": 1,
-                        "avgRetailerDensity": 1,
-                        "avgRevenue": 1,
-                        "avgTTV": 1,
-                        "avgTransactionFrequency": 1,
-                    }
-                },
             ]
+
+            # Append brand-related stages if a brand_id is provided.
+            if brand_id:
+                pipeline_base.extend(
+                    [
+                        {
+                            "$lookup": {
+                                "from": "brands",
+                                "localField": "_id.brand",
+                                "foreignField": "_id",
+                                "as": "brand",
+                            }
+                        },
+                        {"$unwind": "$brand"},
+                    ]
+                )
+
+            # Build the project stage dynamically.
+            project_stage = {
+                "$project": {
+                    "_id": 0,
+                    "lga": 1,
+                    "count": 1,
+                    "avgRetailerDensity": 1,
+                    "avgRevenue": 1,
+                    "avgTTV": 1,
+                    "avgTransactionFrequency": 1,
+                }
+            }
+            if brand_id:
+                project_stage["$project"]["brand"] = 1
+
+            pipeline_base.append(project_stage)
 
             # Define the $facet stage for pagination.
             facet_stage = {

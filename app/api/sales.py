@@ -29,11 +29,12 @@ async def get_sales_metrics(
     lga_id: Optional[str] = Query(None, description="Filter by LGA ObjectId"),
     brand_id: Optional[str] = Query(None, description="Filter by Brand ObjectId"),
     state_id: Optional[str] = Query(None, description="Filter by State ObjectId"),
+    product_category: Optional[str] = Query(None, description="Filter by product category")
 ):
     """Get sales metrics with optional filters"""
     try:
         skip = (page - 1) * page_size
-        result = await sales_service.get_sales_metrics(
+        result = await sales_service.get_sales_metricsv2(
             skip=skip,
             limit=page_size,
             start_date=start_date,
@@ -41,6 +42,8 @@ async def get_sales_metrics(
             lga_id=lga_id,
             state_id=state_id,
             brand_id=brand_id,
+            product_category=product_category
+            
         )
         return JSONResponse(content=result)
     except Exception as e:

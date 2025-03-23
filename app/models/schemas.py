@@ -377,6 +377,36 @@ class BrandMetrics(BaseModel):
         }
 
 
+class Category(BaseModel):
+    id: str = Field(..., description="Unique identifier for the category")
+    product_category: str = Field(..., description="Name of the category")
+    # Add other fields if necessary
+
+
+class CategoryResponse(BaseModel):
+    """Schema for paginated category response"""
+
+    data: List[Category]
+    total: int = Field(..., description="Total number of records")
+    page: int = Field(..., description="Current page number")
+    page_size: int = Field(..., description="Number of items per page")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "data": [
+                    {
+                        "id": "67d43b1f48b591196ff405d7",
+                        "product_category": "Electronics",
+                    }
+                ],
+                "total": 1,
+                "page": 1,
+                "page_size": 10,
+            }
+        }
+
+
 class BrandResponse(BaseModel):
     """Schema for paginated brand response"""
 

@@ -1,4 +1,5 @@
 from typing import Dict, Optional
+
 from app.db.mongo_client import mongodb_client
 from app.services.base import BaseService
 

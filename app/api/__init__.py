@@ -1,13 +1,13 @@
 from fastapi import APIRouter
 
+from .brands import router as brands_router
+from .categories import router as categories_router
 from .cities import router as cities_router
 from .lgas import router as lgas_router
 from .neighborhoods import router as neighborhoods_router
 from .retailers import router as retailers_router
 from .sales import router as sales_router
 from .states import router as states_router
-from .brands import router as brands_router
-from .categories import router as categories_router
 
 base_router = APIRouter()
 

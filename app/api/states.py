@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 
-from app.models.schemas import State, HTTPError, StateResponse
+from app.models.schemas import HTTPError, State, StateResponse
 from app.services.state_service import state_service
 
 router = APIRouter()

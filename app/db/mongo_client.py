@@ -1,10 +1,10 @@
+import asyncio
 from typing import Any, Dict, List, Optional
 
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from rich.console import Console
-import asyncio
 
 from app.core.config import settings
 

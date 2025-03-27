@@ -25,10 +25,8 @@ class Settings(BaseSettings):
     REDIS_TTL: int = 3600  # Cache TTL in seconds
 
     # MongoDB Settings
-    MONGODB_URI: str = (
-        "mongodb+srv://rc-ai-lab:j9NQ9s78T2UAxZ@rc-cluster0.r1day.mongodb.net/"
-    )
-    MONGODB_DB: str = "nigeria_unit_economics"
+    MONGODB_URI: str
+    MONGODB_DB: str
 
     class Config:
         env_file = ".env"
